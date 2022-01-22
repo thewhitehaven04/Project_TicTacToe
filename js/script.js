@@ -8,22 +8,23 @@ cellModel = function () {
    */
   const getCell = function () {
     return value;
-  },
+  };
 
   /** Sets the value to valueToSet
    * @param {String} valueToSet - value to be assigned
    */
   const setCell = function (valueToSet) {
-    if (value !== null) value = valueToSet;
-    else throw new CellAssignmentError('This cell has already been assigned to.');
+    if (value !== null) {
+      value = valueToSet;
+    } else throw new CellAssignmentError('This cell has already been assigned to.');
   };
 
   return { getCell, setCell };
 };
 
-const cellView = function (value, className, height, width) {
+const cellView = function (value, className) {
   const element = document.createElement('div');
-  
+
   function render() {
     element.classList.add(className);
     element.textContent = value;
@@ -38,35 +39,16 @@ const cellView = function (value, className, height, width) {
   return { render, setCell };
 };
 
-const cellFactoryController = function (view, model, dimension) {
-  let cells = []; 
-
-  function initCellStorage() {
-    for (let i = 0; i < dimension; i++)
-    let arr = Array(dimension).keys();
-    cells.push(arr);
-  }
-  initCellStorage();
-
-  const newCell = function (height, width) {
+const cellFactoryController = (function (view, model) {
+  /** Returns an object containing the cell's view and model. */
+  const newCell = function () {
     const cellModel = model();
-    const cellView = view('', height, width);
-    
-    cells[height][width] = {cellView, cellModel}
-    return { cellView, cellModel }
+    const cellView = view('', 'board__cell');
+    return { cellView, cellModel };
   };
 
-  const setCell = function (value, height, width) {
-    cells[height][width].cellModel.setCell(value);      
-    cells[height][width].cellView.getCell()
-  }
-
-  const getCell = function (height, width) {
-    return cells[height][width]; 
-  }
-
   return { newCell };
-}(cellView, cellModel)
+})(cellView, cellModel);
 
 const welcomeDialog = (function (bodyElement) {
   // All objects of the welcome window are stored here to provide access to
@@ -142,58 +124,110 @@ const welcomeDialog = (function (bodyElement) {
   return { hide, show, buttonClickEventListener };
 })(body);
 
-/** Renders the game board. */
-const gameBoardView = function (dimensions) {
+/** Renders the game board.
+ * @param {Number} dimensions - board dimensions;
+ * @param {cellView} cellViews - an array of cellView objects to be rendered
+ */
+const gameBoardView = function (dimensions, cellViews, bodyElement) {
   const rootDiv = document.createElement('div');
-  
-  const board = (function (dimensions, cellClassName) {
-    const boardRoot = document.createElement('div');
+  let boardTwoDimArray = [];
 
+  const board = (function (dimensions, cellClassName, cellViews) {
+    const boardRoot = document.createElement('div');
     boardRoot.style.display = 'grid';
     boardRoot.style.gridTemplateColumns = `repeat(${dimensions}, 1fr)`;
     boardRoot.style.gridTemplateRows = `repeat(${dimensions}, 1fr)`;
-    boardRoot.classList.add('board__grid');
+    boardRoot.classList.add(cellClassName);
 
-    // display cells 
-    for (let height = 0; height < dimensions; height++) {
-      for (let width = 0; width < dimensions; width++) {
-        const cell = cellController.
-        boardRow.push(cell);
-        boardRoot.append(cell);
+    // push cellViews to storage
+    while (cellViews.length > 0) {
+      let cellViewRow = [];
+      for (let i = 0; i < dimensions; i++) {
+        cellViewRow = [...Array(dimensions).keys()].map(() => cellViews.pop());
+        cellViewRow.forEach(cell => boardRoot.appendChild(cell.render()));
+        boardTwoDimArray.push(cellViewRow);
       }
-      boardCellsArray.push(boardRow);
     }
 
     return boardRoot;
-  })(dimensions, 'board__cell');
+  })(dimensions, 'board', cellViews);
 
   /** Attaches the rendered board to the root element */
-  const show = function() {
+  const show = function () {
     rootDiv.appendChild(board);
-  }
+    bodyElement.appendChild(rootDiv);
+  };
 
-  const get
+  /** Replaces the current cell view with the one supplied in the cellView argument.
+   * @param {Number} row - row number;
+   * @param {Number} column - column number;
+   * @param {cellView} cellView - the modified cell view.
+   */
+  const updateCell = function (value, row, column) {
+    boardTwoDimArray[row][column].setValue(value);
+  };
 
-  return { show, updateCell() };
+  return { show, updateCell };
+};
+
+/** Models the game board */
+const gameBoardModel = function (cellModels) {
+  /** A two-dimensional array of board cells of defined dimensions. */
+  const board = (function (dimensions) {
+    let arr = [];
+    for (let row = 0; row < dimensions; row++) {
+      let row = [];
+      for (let column = 0; column < dimensions; column++)
+        row.push(cellModels[row][column]);
+      arr.push(row);
+    }
+    return arr;
+  })(cellModels);
+
+  const updateCell = function (value, row, column) {
+    board[row][column].setCell(value);
+  };
+
+  const getCell = (row, column) => {
+    return board[row][column];
+  };
+
+  return { getCell, updateCell, getCell };
 };
 
 const gameBoardController = (function (
-  gameBoardViewController,
-  gameBoardModelController,
-  dimension
+  gameBoardView,
+  gameBoardModel,
+  cellFactoryController,
+  dimension,
+  root
 ) {
-  const model = gameModelController();
-  const view = gameViewController();
-  function start() {
-    v
-  }
-})(gameBoardView);
+  const cells = (function (dimension) {
+    const dim = dimension * dimension;
+    const cellArr = [...Array(dim).keys()].map(() => cellFactoryController.newCell());
+    return cellArr;
+  })(dimension);
 
-/** The top-level controller responsible for the control flow of both the welcome wind and the game itself. */
-const gameController = (function (welcomeDialogView, gameBoardView, dimension) {
-  /** Displays the welcome screen */
+  let cellViews = cells.map(cell => cell['cellView']);
+  let cellModels = cells.map(cell => cell['cellModel']);
+
+  const model = gameBoardModel(cellModels);
+  const view = gameBoardView(dimension, cellViews, root);
+
+  const updateCell = function (value, row, column) {
+    model.updateCell(value, row, column);
+    view.updateCell(value, row, column);
+  };
+
+  const show = () => view.show();
+
+  return { updateCell, show };
+})(gameBoardView, gameBoardModel, cellFactoryController, 3, body);
+
+/** The top-level controller responsible for the control flow
+ * of both the welcome window and the game itself. */
+const gameController = (function (welcomeDialogView, gameBoardController, dimension) {
   const gameState = {};
-  const gameBoardDimensions = 3;
 
   /** Displays the welcome message */
   const welcome = function () {
@@ -201,8 +235,8 @@ const gameController = (function (welcomeDialogView, gameBoardView, dimension) {
   };
 
   const startGame = function () {
-    gameState['gameView'] = gameBoardController(dimensions);
-    gameState['gameView'].show();
+    gameState['boardController'] = gameBoardController;
+    gameState['boardController'].show();
   };
 
   /** Handles clicking on the 'Start' button after the option has been chosen. */
@@ -220,6 +254,6 @@ const gameController = (function (welcomeDialogView, gameBoardView, dimension) {
   };
 
   return { start };
-})(welcomeDialog, gameBoardView, 3);
+})(welcomeDialog, gameBoardController, 3);
 
 gameController.start();

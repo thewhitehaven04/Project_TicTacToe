@@ -45,3 +45,22 @@ html {
 .welcome__button:hover {
   border-color: gray;
 }
+
+.header {
+  text-align: center;
+}
+
+.board {
+  height: 600px;
+  width: 600px;
+  margin: auto;
+  border: 1px solid black;
+}
+
+.board__cell {
+  aspect-ratio: 1;
+  min-height: 100px;
+  min-width: 100px;
+
+  border: 1px solid black;
+}
