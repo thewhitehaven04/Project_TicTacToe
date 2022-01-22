@@ -1,6 +1,6 @@
 const body = document.querySelector('body');
 
-cellModel = function () {
+const cellModel = function () {
   let value = null;
 
   /** Returns the value of the cell.
@@ -25,30 +25,40 @@ cellModel = function () {
 const cellView = function (value, className) {
   const element = document.createElement('div');
 
+  /** Creates the div element with the assigned text value. */
   function render() {
     element.classList.add(className);
     element.textContent = value;
-
     return element;
   }
 
-  function setCell(value) {
-    element.textContent = value;
-  }
-
-  return { render, setCell };
-};
-
-const cellFactoryController = (function (view, model) {
-  /** Returns an object containing the cell's view and model. */
-  const newCell = function () {
-    const cellModel = model();
-    const cellView = view('', 'board__cell');
-    return { cellView, cellModel };
+  const addMarkCellListener = markHandler => {
+    element.addEventListener('click', event => markHandler());
   };
 
-  return { newCell };
-})(cellView, cellModel);
+  const setCell = value => (element.textContent = value);
+
+  return { render, setCell, addMarkCellListener };
+};
+
+/** Returns an object containing the cell's view and model. */
+const cellController = function () {
+  /** Update the cell value both in the model and the view.
+   * @param {Number} value - the value to be assigned to both the model and the view
+   */
+  const view = cellView('', 'board__cell');
+  const model = cellModel();
+
+  const updateCell = function (value) {
+    console.log('Praise kek!');
+    model.setCell(value);
+    view.setCell(value);
+  };
+
+  view.addMarkCellListener(updateCell);
+
+  return { updateCell, cellView: view, cellModel: model };
+};
 
 const welcomeDialog = (function (bodyElement) {
   // All objects of the welcome window are stored here to provide access to
@@ -176,17 +186,13 @@ const gameBoardModel = function (cellModels) {
   const board = (function (dimensions) {
     let arr = [];
     for (let row = 0; row < dimensions; row++) {
-      let row = [];
-      for (let column = 0; column < dimensions; column++)
-        row.push(cellModels[row][column]);
-      arr.push(row);
+      let rowToPush = [...Array(dimensions).keys()].map(() => cellModels[row].pop());
+      arr.push(rowToPush);
     }
     return arr;
   })(cellModels);
 
-  const updateCell = function (value, row, column) {
-    board[row][column].setCell(value);
-  };
+  const updateCell = (value, row, column) => board[row][column].setCell(value);
 
   const getCell = (row, column) => {
     return board[row][column];
@@ -198,13 +204,13 @@ const gameBoardModel = function (cellModels) {
 const gameBoardController = (function (
   gameBoardView,
   gameBoardModel,
-  cellFactoryController,
+  cellController,
   dimension,
   root
 ) {
   const cells = (function (dimension) {
     const dim = dimension * dimension;
-    const cellArr = [...Array(dim).keys()].map(() => cellFactoryController.newCell());
+    const cellArr = [...Array(dim).keys()].map(() => cellController());
     return cellArr;
   })(dimension);
 
@@ -222,17 +228,12 @@ const gameBoardController = (function (
   const show = () => view.show();
 
   return { updateCell, show };
-})(gameBoardView, gameBoardModel, cellFactoryController, 3, body);
+})(gameBoardView, gameBoardModel, cellController, 3, body);
 
 /** The top-level controller responsible for the control flow
  * of both the welcome window and the game itself. */
-const gameController = (function (welcomeDialogView, gameBoardController, dimension) {
+const gameController = (function (welcomeDialogView, gameBoardController) {
   const gameState = {};
-
-  /** Displays the welcome message */
-  const welcome = function () {
-    welcomeDialogView.show();
-  };
 
   const startGame = function () {
     gameState['boardController'] = gameBoardController;
@@ -249,9 +250,7 @@ const gameController = (function (welcomeDialogView, gameBoardController, dimens
   welcomeDialogView.buttonClickEventListener(gameStartEventHandler);
 
   /** Starts the app. */
-  const start = function () {
-    welcome();
-  };
+  const start = () => welcomeDialogView.show();
 
   return { start };
 })(welcomeDialog, gameBoardController, 3);
