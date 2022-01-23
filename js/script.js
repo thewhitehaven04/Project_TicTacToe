@@ -14,9 +14,8 @@ const cellModel = function () {
    * @param {String} valueToSet - value to be assigned
    */
   const setCell = function (valueToSet) {
-    if (value !== null) {
-      value = valueToSet;
-    } else throw new CellAssignmentError('This cell has already been assigned to.');
+    if (value == null) value = valueToSet;
+    else throw 'This cell has already been assigned to.';
   };
 
   return { getCell, setCell };
@@ -32,25 +31,24 @@ const cellView = function (value, className) {
     return element;
   }
 
-  const addMarkCellListener = markHandler => {
-    element.addEventListener('click', event => markHandler());
+  const addMarkCellListener = (markHandler, value) => {
+    element.addEventListener('click', (event) => markHandler(value));
   };
 
-  const setCell = value => (element.textContent = value);
+  const setCell = (value) => (element.textContent = value);
 
   return { render, setCell, addMarkCellListener };
 };
 
 /** Returns an object containing the cell's view and model. */
 const cellController = function () {
-  /** Update the cell value both in the model and the view.
-   * @param {Number} value - the value to be assigned to both the model and the view
-   */
   const view = cellView('', 'board__cell');
   const model = cellModel();
 
+  /** Update the cell value both in the model and the view.
+   * @param {Number} value - the value to be assigned to both the model and the view
+   */
   const updateCell = function (value) {
-    console.log('Praise kek!');
     model.setCell(value);
     view.setCell(value);
   };
@@ -68,6 +66,8 @@ const welcomeDialog = (function (bodyElement) {
     return root;
   })('welcome');
 
+  let startingOption;
+
   let optionsList = [
     { type: 'radio', name: 'option', value: 'Cross', id: 'cross' },
     { type: 'radio', name: 'option', value: 'Nought', id: 'nought' },
@@ -76,12 +76,13 @@ const welcomeDialog = (function (bodyElement) {
   const optionClass = 'welcome__option';
   const options = (function (optionList, optionClass) {
     const optionDiv = document.createElement('div');
-    optionList.forEach(option => {
+    optionList.forEach((option) => {
       const optionInput = document.createElement('input');
       optionInput.classList.add(optionClass);
 
       // Set attributes for options
-      for (property in option) optionInput.setAttribute(property, option[property]);
+      for (property in option)
+        optionInput.setAttribute(property, option[property]);
 
       optionDiv.appendChild(optionInput);
 
@@ -105,15 +106,14 @@ const welcomeDialog = (function (bodyElement) {
   })('welcome_button', 'Start');
 
   const buttonClickEventListener = function (handler) {
-    button.addEventListener('click', event => {
-      handler();
-    });
+    button.addEventListener('click', (event) => handler());
   };
 
   // Enable the button upon clicking on either radio option
-  welcomeRoot.addEventListener('click', event => {
+  welcomeRoot.addEventListener('click', (event) => {
     if (event.target.matches(`.${optionClass}`)) {
       button.disabled = false;
+      startingOption = event.target.value;
     }
   });
 
@@ -121,46 +121,43 @@ const welcomeDialog = (function (bodyElement) {
   welcomeRoot.appendChild(button);
   bodyElement.append(welcomeRoot);
 
-  /** Close the form */
-  const hide = function () {
-    bodyElement.removeChild(welcomeRoot);
+  /** Close the welcome dialog form */
+  const hide = () => bodyElement.removeChild(welcomeRoot);
+
+  /** Show the welcome dialog form */
+  const show = () => bodyElement.appendChild(welcomeRoot);
+
+  const getStartingOption = () => {
+    return startingOption;
   };
 
-  /** Show the form */
-  const show = function () {
-    bodyElement.appendChild(welcomeRoot);
-  };
-
-  return { hide, show, buttonClickEventListener };
+  return { hide, show, buttonClickEventListener, getStartingOption };
 })(body);
 
 /** Renders the game board.
- * @param {Number} dimensions - board dimensions;
  * @param {cellView} cellViews - an array of cellView objects to be rendered
  */
-const gameBoardView = function (dimensions, cellViews, bodyElement) {
+const boardView = function (cellViews, bodyElement) {
   const rootDiv = document.createElement('div');
   let boardTwoDimArray = [];
 
-  const board = (function (dimensions, cellClassName, cellViews) {
+  const board = (function (boardClassName, cellViews) {
     const boardRoot = document.createElement('div');
-    boardRoot.style.display = 'grid';
-    boardRoot.style.gridTemplateColumns = `repeat(${dimensions}, 1fr)`;
-    boardRoot.style.gridTemplateRows = `repeat(${dimensions}, 1fr)`;
-    boardRoot.classList.add(cellClassName);
+    boardRoot.classList.add(boardClassName);
 
     // push cellViews to storage
     while (cellViews.length > 0) {
       let cellViewRow = [];
-      for (let i = 0; i < dimensions; i++) {
-        cellViewRow = [...Array(dimensions).keys()].map(() => cellViews.pop());
-        cellViewRow.forEach(cell => boardRoot.appendChild(cell.render()));
+      const dim = 3;
+      for (let i = 0; i < dim; i++) {
+        cellViewRow = [...Array(dim).keys()].map(() => cellViews.pop());
+        cellViewRow.forEach((cell) => boardRoot.appendChild(cell.render()));
         boardTwoDimArray.push(cellViewRow);
       }
     }
 
     return boardRoot;
-  })(dimensions, 'board', cellViews);
+  })('board', cellViews);
 
   /** Attaches the rendered board to the root element */
   const show = function () {
@@ -181,16 +178,17 @@ const gameBoardView = function (dimensions, cellViews, bodyElement) {
 };
 
 /** Models the game board */
-const gameBoardModel = function (cellModels) {
-  /** A two-dimensional array of board cells of defined dimensions. */
-  const board = (function (dimensions) {
-    let arr = [];
-    for (let row = 0; row < dimensions; row++) {
-      let rowToPush = [...Array(dimensions).keys()].map(() => cellModels[row].pop());
-      arr.push(rowToPush);
-    }
+const boardModel = function (cellModels) {
+  /** A two-dimensional array of board cells of defined dimensions.
+   * @param {Number} dimensions - denotes the array size
+   */
+  const dim = 3;
+  const board = function (cellModels) {
+    let arr = [[], [], []];
+    cellModels.forEach((cell, index) => arr[index % dim].push(cell));
+    console.table(arr);
     return arr;
-  })(cellModels);
+  };
 
   const updateCell = (value, row, column) => board[row][column].setCell(value);
 
@@ -198,27 +196,31 @@ const gameBoardModel = function (cellModels) {
     return board[row][column];
   };
 
-  return { getCell, updateCell, getCell };
+  return { getCell, updateCell };
 };
 
-const gameBoardController = (function (
-  gameBoardView,
-  gameBoardModel,
+const gameController = (function (
+  boardView,
+  boardModel,
   cellController,
-  dimension,
-  root
+  startingMark,
+  root,
 ) {
-  const cells = (function (dimension) {
-    const dim = dimension * dimension;
-    const cellArr = [...Array(dim).keys()].map(() => cellController());
-    return cellArr;
-  })(dimension);
+  // dimensions of the board grid
+  const _dim = 3;
+  const _cells = [...Array(_dim * _dim).keys()].map(() => cellController());
 
-  let cellViews = cells.map(cell => cell['cellView']);
-  let cellModels = cells.map(cell => cell['cellModel']);
+  // Initializing the first player to make a move
+  let nowPlaying = startingMark;
 
-  const model = gameBoardModel(cellModels);
-  const view = gameBoardView(dimension, cellViews, root);
+  // An one-dimensional array of views
+  let cellViews = _cells.map((cell) => cell['cellView']);
+
+  // An one-dimensional array of models
+  let cellModels = _cells.map((cell) => cell['cellModel']);
+
+  const model = boardModel(cellModels);
+  const view = boardView(cellViews, root);
 
   const updateCell = function (value, row, column) {
     model.updateCell(value, row, column);
@@ -228,31 +230,37 @@ const gameBoardController = (function (
   const show = () => view.show();
 
   return { updateCell, show };
-})(gameBoardView, gameBoardModel, cellController, 3, body);
+})(boardView, boardModel, cellController, body);
 
 /** The top-level controller responsible for the control flow
  * of both the welcome window and the game itself. */
-const gameController = (function (welcomeDialogView, gameBoardController) {
+const App = (function (welcomeDialog, gameController) {
   const gameState = {};
+  let nowPlaying;
 
   const startGame = function () {
-    gameState['boardController'] = gameBoardController;
+    gameState['boardController'] = gameController();
     gameState['boardController'].show();
   };
 
   /** Handles clicking on the 'Start' button after the option has been chosen. */
   const gameStartEventHandler = function () {
-    welcomeDialogView.hide();
+    nowPlaying = welcomeDialog.getStartingOption();
+    welcomeDialog.hide();
     startGame();
   };
 
   /** Binds the event listener to controller handler */
-  welcomeDialogView.buttonClickEventListener(gameStartEventHandler);
+  welcomeDialog.buttonClickEventListener(gameStartEventHandler);
 
   /** Starts the app. */
-  const start = () => welcomeDialogView.show();
+  const start = () => welcomeDialog.show();
 
   return { start };
-})(welcomeDialog, gameBoardController, 3);
+})(welcomeDialog, gameController, 3);
 
-gameController.start();
+const playerController = function (firstPlayer, secondPlayer) {
+
+};
+
+App.start();
