@@ -1,5 +1,4 @@
 const body = document.querySelector('body');
-
 const cellModel = function () {
   let value = null;
 
@@ -35,6 +34,9 @@ const cellView = function (value, className) {
     element.addEventListener('click', (event) => markHandler());
   };
 
+  /** Assign the value to the cell.
+   * @param {String} value - the value being assigned.
+   */
   const setCell = (value) => (element.textContent = value);
 
   return { render, setCell, addMarkCellListener };
@@ -57,7 +59,7 @@ const cellController = function (notifier) {
     notifier.notify('move');
   };
 
-  /** Update the value that is to be assigned to the cell in the next move.
+  /** Updates the value that is to be assigned to the cell in the next move.
    * @param {String} value - the value to be assigned.
    */
   const updateNextValue = (value) => (nextValue = value);
@@ -196,6 +198,9 @@ const boardModel = function (cellModels) {
   /** A two-dimensional array of board cells of defined dimensions.
    * @param {Number} dimensions - denotes the array size
    */
+
+  let moveCounter = 0;
+
   const dim = 3;
   const board = (function (cellModels) {
     let arr = [[], [], []];
@@ -203,13 +208,49 @@ const boardModel = function (cellModels) {
     return arr;
   })(cellModels);
 
-  const updateCell = (value, row, column) => board[row][column].setCell(value);
+  /** Returns false if the winner hasn't been determined.
+   *
+   * Returns 'Cross' if the player whose mark is crosses has won.
+   *
+   * Returns 'Nought' if the player whose mark is zeroes has won.
+   *
+   * Returns 'Draw' if the total number of moves made is equal to 9 and
+   * no player has achieved any of the win conditions.*/
+  const ifPlayerWon = function () {
+    const winConditions = [
+      [board[0][0], board[1][1], board[2][2]],
+      [board[2][0], board[1][1], board[0][2]],
+      [board[0][0], board[1][0], board[2][0]],
+      [board[0][1], board[1][1], board[2][1]],
+      [board[0][2], board[1][2], board[2][2]],
+      [board[0][0], board[0][1], board[0][2]],
+      [board[1][0], board[1][1], board[1][2]],
+      [board[2][0], board[2][1], board[2][2]],
+    ].map((condition) => condition.map((value) => value.getCell()));
+    
+    for (condition of winConditions) {
+      if (condition.join('') === 'xxx') return 'Cross';
+      else if (condition.join('') === '000') return 'Nought';
+    }
+    return moveCounter === 9 ? 'Draw' : false;
+  };
+
+  /** Updates the model with the new value that is equal to the mark of the
+   * player whose turn it is to make a move. */
+  const updateCell = function (value, row, column) {
+    moveCounter++;
+    board[row][column].setCell(value);
+  };
 
   const getCell = (row, column) => {
     return board[row][column];
   };
 
-  return { getCell, updateCell };
+  return {
+    getCell,
+    updateCell,
+    ifPlayerWon,
+  };
 };
 
 const playerModel = function (name, mark) {
@@ -265,9 +306,12 @@ const gameController = (function (
   root,
 ) {
   let _cells;
-  let model;
-  let view;
+  let _model;
+  let _view;
 
+  /** Initializes the cell values with empty strings.
+   * Attaches a notification controller notifying the game controller
+   * whenever a player performs a move.*/
   const _setupCells = function () {
     const _dim = 3;
     const notificationController =
@@ -283,26 +327,37 @@ const gameController = (function (
     // An one-dimensional array of models
     let cellModels = _cells.map((cell) => cell['cellModel']);
 
-    model = boardModel(cellModels);
-    view = boardView(cellViews, root);
+    _model = boardModel(cellModels);
+    _view = boardView(cellViews, root);
   };
 
   const onEvent = function (event) {
-    const nextMark = playerController.getNextMark();
-    if (event === 'move') {
-      for (cell of _cells) {
-        cell.updateNextValue(nextMark);
+    const playerWon = hasPlayerWon();
+    if (playerWon === false) {
+      const nextMark = playerController.getNextMark();
+      if (event === 'move') {
+        // When a move has been completed by a player,
+        // assign the next player to make a move.
+        for (cell of _cells) cell.updateNextValue(nextMark);
       }
+    } else {
+      console.log(`"${playerWon}" player has won`);
     }
   };
 
+  /** Checks if either player has reached any of the win conditions. */
+  const hasPlayerWon = function () {
+    return _model.ifPlayerWon();
+  };
+
+  /** Displays the game board. */
   const show = () => {
     _setupCells();
     const nextMark = playerController.getNextMark();
     for (cell of _cells) {
       cell.updateNextValue(nextMark);
     }
-    view.show();
+    _view.show();
   };
 
   return { show, onEvent };
