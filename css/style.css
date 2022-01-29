@@ -1,3 +1,5 @@
+@import url(https://fonts.googleapis.com/css?family=Staatliches);
+
 html {
   box-sizing: border-box;
 }
@@ -9,22 +11,26 @@ html {
 }
 
 :root {
-  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
-    'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-  font-size: larger;
+  font-family: 'Staatliches';
+  font-size: 36pt;
+  --violet-blue: #6369D1;
+  --alice-blue: #EBF2FA;
+  --vermillion: #D64045;
 }
 
 .welcome {
-  position: absolute;
+  margin: 5% auto;
+  height: 5em;
+  width: 500px;
+  padding: 70px; 
+  border-radius: 10px;
+  
+  background-color: var(--alice-blue);
+  color: var(--vermillion);
+  font-size: 40pt;  
 
-  top: 50%;
-  left: 50%;
 
-  transform: translate(-50%, -50%);
-
-  background-color: rgba(2, 120, 2, 0.3);
-
-  padding: 30px;
+  padding: auto;
   display: flex;
   flex-flow: column nowrap;
   gap: 10px;
@@ -32,18 +38,21 @@ html {
 
 .welcome__button {
   all: unset;
-
+  background-color: var(--violet-blue); 
+  color: black;
   border: 2px solid white;
   border-radius: 3px;
 
-  background-color: white;
   padding: 0.1em 0.5em;
+  width: 70%;
+  margin: 10px auto; 
   height: 1.5em;
   text-align: center;
 }
 
 .welcome__button:hover {
-  border-color: gray;
+  border-color: white;
+  
 }
 
 .header {
@@ -51,14 +60,18 @@ html {
 }
 
 .board {
-  height: 600px;
-  width: 600px;
+  height: 500px;
+  width: 500px;
   margin: auto;
   border: 1px solid black;
 
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
+}
+
+.board__options {
+  margin: 5px auto;
 }
 
 .board__cell {
@@ -68,5 +81,12 @@ html {
 
   border: 1px solid black;
 
-  font-size: 24pt;
+  text-align: center;
+  padding: 16%;
+  font-size: 72pt;
+  color: var(--vermillion);
+}
+
+.button-restart {
+  margin: auto;
 }

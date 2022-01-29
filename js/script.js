@@ -83,7 +83,8 @@ const welcomeDialog = (function (bodyElement) {
   })('welcome');
 
   let startingOption;
-
+  const button = _initButton('welcome__button', 'Start');
+  
   let optionsList = [
     { type: 'radio', name: 'option', value: 'Cross', id: 'cross' },
     { type: 'radio', name: 'option', value: 'Nought', id: 'nought' },
@@ -92,6 +93,7 @@ const welcomeDialog = (function (bodyElement) {
   const optionClass = 'welcome__option';
   const options = (function (optionList, optionClass) {
     const optionDiv = document.createElement('div');
+    optionDiv.classList.add('board__options');
     optionList.forEach((option) => {
       const optionInput = document.createElement('input');
       optionInput.classList.add(optionClass);
@@ -111,7 +113,7 @@ const welcomeDialog = (function (bodyElement) {
     return optionDiv;
   })(optionsList, optionClass);
 
-  const button = (function (className, text) {
+  function _initButton(className, text) {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = text;
@@ -119,7 +121,7 @@ const welcomeDialog = (function (bodyElement) {
     button.classList.add(className);
 
     return button;
-  })('welcome_button', 'Start');
+  }
 
   const buttonClickEventListener = function (handler) {
     button.addEventListener('click', (event) => handler());
@@ -157,7 +159,7 @@ const boardView = function (cellViews, bodyElement) {
   const rootDiv = document.createElement('div');
   let boardTwoDimArray = [];
 
-  const buttonRestart = _initRestartButton();
+  const buttonRestart = _initRestartButton('button-restart');
   const board = _initBoard('board', cellViews);
 
   function _initBoard(boardClassName, cellViews) {
@@ -179,10 +181,11 @@ const boardView = function (cellViews, bodyElement) {
   }
 
   // Initialize the restart button.
-  function _initRestartButton() {
+  function _initRestartButton(className) {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = 'Start new game!';
+    button.classList.add(className);
     return button;
   }
 
@@ -274,7 +277,7 @@ const playerModel = function (name, mark) {
 };
 
 const playerController = (function (playerModel) {
-  const markMapping = { Nought: '0', Cross: 'x' };
+  const markMapping = { Nought: '0', Cross: 'X' };
 
   let firstPlayer;
   let secondPlayer;
