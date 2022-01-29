@@ -31,8 +31,8 @@ const cellView = function (value, className) {
     return element;
   }
 
-  const addMarkCellListener = (markHandler, value) => {
-    element.addEventListener('click', (event) => markHandler(value));
+  const addMarkCellListener = (markHandler) => {
+    element.addEventListener('click', (event) => markHandler());
   };
 
   const setCell = (value) => (element.textContent = value);
@@ -41,21 +41,35 @@ const cellView = function (value, className) {
 };
 
 /** Returns an object containing the cell's view and model. */
-const cellController = function () {
+const cellController = function (notifier) {
   const view = cellView('', 'board__cell');
   const model = cellModel();
 
-  /** Update the cell value both in the model and the view.
-   * @param {Number} value - the value to be assigned to both the model and the view
+  /** Stores the value to be assigned next to the both the model and the view. */
+  let nextValue;
+
+  /** Update the cell value both in the model and the view with the nextValue.
+   * nextValue is updated depending on which player is to make a move next.
    */
-  const updateCell = function (value) {
-    model.setCell(value);
-    view.setCell(value);
+  const updateCell = function () {
+    model.setCell(nextValue);
+    view.setCell(nextValue);
+    notifier.notify('move');
   };
+
+  /** Update the value that is to be assigned to the cell in the next move.
+   * @param {String} value - the value to be assigned.
+   */
+  const updateNextValue = (value) => (nextValue = value);
 
   view.addMarkCellListener(updateCell);
 
-  return { updateCell, cellView: view, cellModel: model };
+  const obj = {
+    updateNextValue,
+    cellView: view,
+    cellModel: model,
+  };
+  return obj;
 };
 
 const welcomeDialog = (function (bodyElement) {
@@ -183,12 +197,11 @@ const boardModel = function (cellModels) {
    * @param {Number} dimensions - denotes the array size
    */
   const dim = 3;
-  const board = function (cellModels) {
+  const board = (function (cellModels) {
     let arr = [[], [], []];
     cellModels.forEach((cell, index) => arr[index % dim].push(cell));
-    console.table(arr);
     return arr;
-  };
+  })(cellModels);
 
   const updateCell = (value, row, column) => board[row][column].setCell(value);
 
@@ -199,54 +212,135 @@ const boardModel = function (cellModels) {
   return { getCell, updateCell };
 };
 
+const playerModel = function (name, mark) {
+  const getMark = function () {
+    return mark;
+  };
+
+  const getName = function () {
+    return name;
+  };
+
+  return { getMark, getName };
+};
+
+const playerController = (function (playerModel) {
+  const markMapping = { Nought: '0', Cross: 'x' };
+
+  let firstPlayer;
+  let secondPlayer;
+
+  let nowPlaying;
+
+  const setupPlayers = function (firstPlayerMark) {
+    firstPlayer = playerModel('First Player', markMapping[firstPlayerMark]);
+    nowPlaying = firstPlayer;
+
+    const remainingMark = firstPlayerMark === 'Cross' ? 'Nought' : 'Cross';
+    secondPlayer = playerModel('Second Player', markMapping[remainingMark]);
+  };
+
+  const _nextMove = function () {
+    if (nowPlaying === firstPlayer) {
+      nowPlaying = secondPlayer;
+    } else {
+      nowPlaying = firstPlayer;
+    }
+  };
+
+  const getNextMark = function () {
+    _nextMove();
+    return nowPlaying.getMark();
+  };
+
+  return { setupPlayers, getNextMark };
+})(playerModel);
+
 const gameController = (function (
   boardView,
   boardModel,
   cellController,
-  startingMark,
+  playerController,
+  notificationControllerFactory,
   root,
 ) {
-  // dimensions of the board grid
-  const _dim = 3;
-  const _cells = [...Array(_dim * _dim).keys()].map(() => cellController());
+  let _cells;
+  let model;
+  let view;
 
-  // Initializing the first player to make a move
-  let nowPlaying = startingMark;
+  const _setupCells = function () {
+    const _dim = 3;
+    const notificationController =
+      notificationControllerFactory(gameController);
 
-  // An one-dimensional array of views
-  let cellViews = _cells.map((cell) => cell['cellView']);
+    _cells = [...Array(_dim * _dim).keys()].map(() => {
+      return cellController(notificationController);
+    });
 
-  // An one-dimensional array of models
-  let cellModels = _cells.map((cell) => cell['cellModel']);
+    // An one-dimensional array of views
+    let cellViews = _cells.map((cell) => cell['cellView']);
 
-  const model = boardModel(cellModels);
-  const view = boardView(cellViews, root);
+    // An one-dimensional array of models
+    let cellModels = _cells.map((cell) => cell['cellModel']);
 
-  const updateCell = function (value, row, column) {
-    model.updateCell(value, row, column);
-    view.updateCell(value, row, column);
+    model = boardModel(cellModels);
+    view = boardView(cellViews, root);
   };
 
-  const show = () => view.show();
+  const onEvent = function (event) {
+    const nextMark = playerController.getNextMark();
+    if (event === 'move') {
+      for (cell of _cells) {
+        cell.updateNextValue(nextMark);
+      }
+    }
+  };
 
-  return { updateCell, show };
-})(boardView, boardModel, cellController, body);
+  const show = () => {
+    _setupCells();
+    const nextMark = playerController.getNextMark();
+    for (cell of _cells) {
+      cell.updateNextValue(nextMark);
+    }
+    view.show();
+  };
+
+  return { show, onEvent };
+})(
+  boardView,
+  boardModel,
+  cellController,
+  playerController,
+  notificationControllerFactory,
+  body,
+);
+
+/** Notifies the game controller about an event from some object (say, a cell) */
+function notificationControllerFactory(observer) {
+  /** Notify the game controller about an event.
+   * @param {cellController} obj;
+   * @param {String} event.
+   */
+  const notify = function (event) {
+    observer.onEvent(event);
+  };
+
+  return { notify };
+}
 
 /** The top-level controller responsible for the control flow
  * of both the welcome window and the game itself. */
-const App = (function (welcomeDialog, gameController) {
-  const gameState = {};
-  let nowPlaying;
-
+const App = (function (welcomeDialog, gameController, playerController) {
   const startGame = function () {
-    gameState['boardController'] = gameController();
-    gameState['boardController'].show();
+    gameController.show();
   };
 
   /** Handles clicking on the 'Start' button after the option has been chosen. */
   const gameStartEventHandler = function () {
-    nowPlaying = welcomeDialog.getStartingOption();
     welcomeDialog.hide();
+
+    const firstPlayerMark = welcomeDialog.getStartingOption();
+    playerController.setupPlayers(firstPlayerMark);
     startGame();
   };
 
@@ -257,10 +351,6 @@ const App = (function (welcomeDialog, gameController) {
   const start = () => welcomeDialog.show();
 
   return { start };
-})(welcomeDialog, gameController, 3);
-
-const playerController = function (firstPlayer, secondPlayer) {
-
-};
+})(welcomeDialog, gameController, playerController);
 
 App.start();
