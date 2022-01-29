@@ -157,7 +157,10 @@ const boardView = function (cellViews, bodyElement) {
   const rootDiv = document.createElement('div');
   let boardTwoDimArray = [];
 
-  const board = (function (boardClassName, cellViews) {
+  const buttonRestart = _initRestartButton();
+  const board = _initBoard('board', cellViews);
+
+  function _initBoard(boardClassName, cellViews) {
     const boardRoot = document.createElement('div');
     boardRoot.classList.add(boardClassName);
 
@@ -173,12 +176,29 @@ const boardView = function (cellViews, bodyElement) {
     }
 
     return boardRoot;
-  })('board', cellViews);
+  }
+
+  // Initialize the restart button.
+  function _initRestartButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Start new game!';
+    return button;
+  }
+
+  const addRestartHandler = (restartHandler) => {
+    buttonRestart.addEventListener('click', (event) => restartHandler());
+  };
 
   /** Attaches the rendered board to the root element */
   const show = function () {
     rootDiv.appendChild(board);
+    rootDiv.appendChild(buttonRestart);
     bodyElement.appendChild(rootDiv);
+  };
+
+  const hide = function () {
+    bodyElement.removeChild(rootDiv);
   };
 
   /** Replaces the current cell view with the one supplied in the cellView argument.
@@ -190,7 +210,7 @@ const boardView = function (cellViews, bodyElement) {
     boardTwoDimArray[row][column].setValue(value);
   };
 
-  return { show, updateCell };
+  return { show, hide, updateCell, addRestartHandler };
 };
 
 /** Models the game board */
@@ -198,7 +218,6 @@ const boardModel = function (cellModels) {
   /** A two-dimensional array of board cells of defined dimensions.
    * @param {Number} dimensions - denotes the array size
    */
-
   let moveCounter = 0;
 
   const dim = 3;
@@ -217,6 +236,7 @@ const boardModel = function (cellModels) {
    * Returns 'Draw' if the total number of moves made is equal to 9 and
    * no player has achieved any of the win conditions.*/
   const ifPlayerWon = function () {
+    moveCounter++;
     const winConditions = [
       [board[0][0], board[1][1], board[2][2]],
       [board[2][0], board[1][1], board[0][2]],
@@ -227,7 +247,7 @@ const boardModel = function (cellModels) {
       [board[1][0], board[1][1], board[1][2]],
       [board[2][0], board[2][1], board[2][2]],
     ].map((condition) => condition.map((value) => value.getCell()));
-    
+
     for (condition of winConditions) {
       if (condition.join('') === 'xxx') return 'Cross';
       else if (condition.join('') === '000') return 'Nought';
@@ -235,24 +255,12 @@ const boardModel = function (cellModels) {
     return moveCounter === 9 ? 'Draw' : false;
   };
 
-  /** Updates the model with the new value that is equal to the mark of the
-   * player whose turn it is to make a move. */
-  const updateCell = function (value, row, column) {
-    moveCounter++;
-    board[row][column].setCell(value);
-  };
-
-  const getCell = (row, column) => {
-    return board[row][column];
-  };
-
   return {
-    getCell,
-    updateCell,
     ifPlayerWon,
   };
 };
 
+/** Models the player. */
 const playerModel = function (name, mark) {
   const getMark = function () {
     return mark;
@@ -281,6 +289,7 @@ const playerController = (function (playerModel) {
     secondPlayer = playerModel('Second Player', markMapping[remainingMark]);
   };
 
+  /** Switches the player to make the next move. */
   const _nextMove = function () {
     if (nowPlaying === firstPlayer) {
       nowPlaying = secondPlayer;
@@ -329,6 +338,7 @@ const gameController = (function (
 
     _model = boardModel(cellModels);
     _view = boardView(cellViews, root);
+    _view.addRestartHandler(_restartHandler);
   };
 
   const onEvent = function (event) {
@@ -341,7 +351,7 @@ const gameController = (function (
         for (cell of _cells) cell.updateNextValue(nextMark);
       }
     } else {
-      console.log(`"${playerWon}" player has won`);
+      console.log(`Outcome: "${playerWon}" has won`);
     }
   };
 
@@ -350,14 +360,25 @@ const gameController = (function (
     return _model.ifPlayerWon();
   };
 
+  function _restartHandler() {
+    hide();
+    _view = null;
+    _model = null;
+    show();
+  }
+
   /** Displays the game board. */
-  const show = () => {
+  const show = function () {
     _setupCells();
     const nextMark = playerController.getNextMark();
     for (cell of _cells) {
       cell.updateNextValue(nextMark);
     }
     _view.show();
+  };
+
+  const hide = function () {
+    _view.hide();
   };
 
   return { show, onEvent };
