@@ -13,11 +13,11 @@ html {
 :root {
   font-family: 'Bangers';
   font-size: 42pt;
-  --picotee-blue: #2B1E88;
-  --cornflower-blue: #8390FA;
-  --maize-crayola: #FAC748;
-  --lavender-blush: #F9E9EC;
-  --pink: #F88DAD;
+  --picotee-blue: #2b1e88;
+  --cornflower-blue: #8390fa;
+  --maize-crayola: #fac748;
+  --lavender-blush: #f9e9ec;
+  --pink: #f88dad;
   text-shadow: 3px 3px 2px black;
 }
 
@@ -33,20 +33,25 @@ body {
   text-shadow: 2px 2px 2px black;
 }
 
+
+.welcome, .result {
+  border: 8px inset var(--pink);
+  border-radius: 18px;
+  display: flex;
+  flex-flow: column nowrap;
+}
+
 .welcome {
   margin: 80px auto;
   width: 500px;
   max-width: 60%;
-  padding: 15px; 
-  border-radius: 18px;
-  
+  padding: 15px;
+
   background-color: var(--maize-crayola);
   color: var(--picotee-blue);
-  
+
   border: 8px inset var(--pink);
   padding: auto;
-  display: flex;
-  flex-flow: column nowrap;
 }
 
 .welcome__button:disabled {
@@ -57,22 +62,23 @@ body {
   all: inherit;
   padding: 2px;
   margin: 15px auto;
-  background-color: var(--picotee-blue); 
+  background-color: var(--picotee-blue);
   color: var(--pink);
   border-radius: 5px;
 
   width: 70%;
   text-align: center;
-  transition: transform 0.1s cubic-bezier(0.075, 0.82, 0.165, 1); 
+  transition: transform 0.1s cubic-bezier(0.075, 0.82, 0.165, 1);
 }
 
-.welcome__button:hover {
+
+.welcome__button, .button-restart:hover {
   transform: scale(1.06);
   cursor: pointer;
 }
 
 .welcome__radio {
-  appearance: none;  
+  appearance: none;
   -webkit-appearance: none;
 
   font: inherit;
@@ -126,9 +132,9 @@ body {
   font-size: 80pt;
   color: var(--picotee-blue);
   text-shadow: 2px 2px 2px black;
-  
+
   /** Centering text */
-  display: flex; 
+  display: flex;
   flex-flow: row;
   justify-content: center;
   align-items: center;
@@ -138,7 +144,49 @@ body {
   all: inherit;
   padding: 15px;
   margin: 15px auto;
-  background-color: var(--maize-crayola); 
+  background-color: var(--maize-crayola);
   color: var(--picotee-blue);
-  border: 8px inset var(--pink); 
+  border: 8px inset var(--pink);
+  cursor: pointer;
+  transition: transform 0.1s cubic-bezier(0.075, 0.82, 0.165, 1);
+}
+
+
+
+.result {
+  position: fixed;
+  z-index: 1;
+
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 500px;
+  
+  padding: 20px;
+
+  background-color: var(--cornflower-blue);
+  color: var(--pink);
+
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  
+  font-size: 32pt;
+}
+
+
+.result__accept {
+  font-family: inherit;
+  color: var(--picotee-blue); 
+  text-shadow: inherit;
+
+  background-color: var(--maize-crayola);
+
+  font-size: 32pt;
+
+  padding: 0.3em 0.2em;
+  border: 3px inset var(--pink);
+  cursor: pointer;
 }

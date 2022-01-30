@@ -224,6 +224,7 @@ const boardModel = function (cellModels) {
    * @param {Number} dimensions - denotes the array size
    */
   let moveCounter = 0;
+  const maximumMoveCount = 9;
 
   const dim = 3;
   const board = (function (cellModels) {
@@ -254,10 +255,10 @@ const boardModel = function (cellModels) {
     ].map((condition) => condition.map((value) => value.getCell()));
 
     for (condition of winConditions) {
-      if (condition.join('') === 'xxx') return 'Cross';
-      else if (condition.join('') === '000') return 'Nought';
+      if (condition.join('') === 'xxx') return 'X';
+      else if (condition.join('') === '000') return '0';
     }
-    return moveCounter === 9 ? 'Draw' : false;
+    return moveCounter === maximumMoveCount ? 'Draw' : false;
   };
 
   return {
@@ -272,18 +273,25 @@ const playerProto = {
     return this.mark;
   },
 
+  /** Returns player name. */
+  getName: function () {
+    return this.name;
+  },
+
   /** Increments player score upon winning a round. */
   increaseScore: function () {
     return this.score++;
   },
 
+  /** Returns player score. */
   getScore: function () {
     return this.score;
   },
 };
 /** Models the player. */
-const playerModel = function (mark, playerProto) {
-  let playerData = { score: 0, mark: mark };
+const playerModel = function (mark, name, playerProto) {
+  // Keeping track of player score to be implemented further
+  let playerData = { score: 0, mark, name };
   let model = Object.assign(playerData, playerProto);
   return model;
 };
@@ -302,13 +310,21 @@ const playerController = (function (playerModel, playerView, playerPrototype) {
   let nowPlaying;
 
   const setupPlayers = function (firstPlayerMark) {
-    firstPlayer = playerModel(markMapping[firstPlayerMark], playerPrototype);
+    // the name field is for when I decide to implement custom player names feature.
+    // Using dummy names right now.
+    firstPlayer = playerModel(
+      markMapping[firstPlayerMark],
+      'First Player',
+      playerPrototype,
+    );
     nowPlaying = firstPlayer;
 
-    console.table(firstPlayer);
-
     const remainingMark = firstPlayerMark === 'Cross' ? 'Nought' : 'Cross';
-    secondPlayer = playerModel(markMapping[remainingMark], playerPrototype);
+    secondPlayer = playerModel(
+      markMapping[remainingMark],
+      'Second Player',
+      playerPrototype,
+    );
   };
 
   /** Switches the player to make the next move. */
@@ -325,7 +341,11 @@ const playerController = (function (playerModel, playerView, playerPrototype) {
     return nowPlaying.getMark();
   };
 
-  return { setupPlayers, getNextMark };
+  const getPlayers = function () {
+    return [firstPlayer, secondPlayer];
+  };
+
+  return { setupPlayers, getNextMark, getPlayers };
 })(playerModel, playerView, playerProto);
 
 const gameController = (function (
@@ -334,6 +354,7 @@ const gameController = (function (
   cellController,
   playerController,
   notificationControllerFactory,
+  resultMessageView,
   root,
 ) {
   let _cells;
@@ -364,17 +385,17 @@ const gameController = (function (
   };
 
   const onEvent = function (event) {
-    const playerWon = hasPlayerWon();
-    if (playerWon === false) {
+    const outcome = hasPlayerWon();
+    if (outcome === false) {
       const nextMark = playerController.getNextMark();
-      console.log(`Next mark: ${nextMark}`);
       if (event === 'move') {
         // When a move has been completed by a player,
         // assign the next player to make a move.
         for (cell of _cells) cell.updateNextValue(nextMark);
       }
     } else {
-      console.log(`Outcome: "${playerWon}" has won`);
+      const players = playerController.getPlayers();
+      resultMessageView(outcome, players, root).show();
     }
   };
 
@@ -413,8 +434,59 @@ const gameController = (function (
   cellController,
   playerController,
   notificationControllerFactory,
+  resultMessage,
   body,
 );
+
+/** View of the result screen.
+ * @param {String} outcome - the outcome string
+ */
+function resultMessage(outcome, players, body) {
+  const messageContainerDiv = document.createElement('div');
+  messageContainerDiv.classList.add('result');
+
+  const spanMsg = document.createElement('span');
+  spanMsg.textContent = _initResultMsg(outcome, players);
+  const acceptButton = _initAcceptButton();
+
+  // Append both the button and the message to the parent div.
+  messageContainerDiv.appendChild(spanMsg);
+  messageContainerDiv.appendChild(acceptButton);
+
+  // Helper function that returns a message describing the outcome.
+  function _initResultMsg(outcome, players) {
+    const playerMarks = players.map((player) => player.getMark());
+
+    console.table(playerMarks);
+
+    if (outcome in playerMarks) {
+      return `The player "${playerMarks[outcome]} (${outcome})" has won!`;
+    } else {
+      return `It's a tie!`;
+    }
+  }
+
+  function _initAcceptButton() {
+    const button = document.createElement('button');
+    button.textContent = 'Accept';
+    button.type = 'button';
+    button.classList.add('result__accept');
+
+    button.addEventListener('click', (event) => {
+      _hide();
+    });
+
+    return button;
+  }
+
+  /** Shows the message. */
+  const show = () => body.appendChild(messageContainerDiv);
+
+  /** Hides the message. */
+  const _hide = () => body.removeChild(messageContainerDiv);
+
+  return { show };
+}
 
 /** Notifies the game controller about an event from some object (say, a cell) */
 function notificationControllerFactory(observer) {
