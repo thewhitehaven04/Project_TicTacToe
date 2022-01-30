@@ -51,8 +51,7 @@ const cellController = function (notifier) {
   let nextValue;
 
   /** Update the cell value both in the model and the view with the nextValue.
-   * nextValue is updated depending on which player is to make a move next.
-   */
+   * nextValue is updated depending on which player is to make a move next.*/
   const updateCell = function () {
     model.setCell(nextValue);
     view.setCell(nextValue);
@@ -60,8 +59,7 @@ const cellController = function (notifier) {
   };
 
   /** Updates the value that is to be assigned to the cell in the next move.
-   * @param {String} value - the value to be assigned.
-   */
+   * @param {String} value - the value to be assigned.*/
   const updateNextValue = (value) => (nextValue = value);
 
   view.addMarkCellListener(updateCell);
@@ -84,34 +82,38 @@ const welcomeDialog = (function (bodyElement) {
 
   let startingOption;
   const button = _initButton('welcome__button', 'Start');
-  
+
   let optionsList = [
     { type: 'radio', name: 'option', value: 'Cross', id: 'cross' },
     { type: 'radio', name: 'option', value: 'Nought', id: 'nought' },
   ];
 
   const optionClass = 'welcome__option';
-  const options = (function (optionList, optionClass) {
+  const radioClass = 'welcome__radio';
+
+  const options = _initRadio(optionsList, optionClass, radioClass);
+
+  function _initRadio(optionList, optionClass, radioClass) {
     const optionDiv = document.createElement('div');
     optionDiv.classList.add('board__options');
     optionList.forEach((option) => {
+      const optionLabel = document.createElement('label');
+      optionLabel.classList.add(optionClass);
+
       const optionInput = document.createElement('input');
-      optionInput.classList.add(optionClass);
+      optionInput.classList.add(radioClass);
 
       // Set attributes for options
       for (property in option)
         optionInput.setAttribute(property, option[property]);
 
-      optionDiv.appendChild(optionInput);
-
-      const optionLabel = document.createElement('label');
-      optionLabel.textContent = option.value;
-      optionLabel.setAttribute('for', option.id);
+      optionLabel.appendChild(optionInput);
+      optionLabel.innerHTML += option.value;
 
       optionDiv.appendChild(optionLabel);
     });
     return optionDiv;
-  })(optionsList, optionClass);
+  }
 
   function _initButton(className, text) {
     const button = document.createElement('button');
@@ -129,7 +131,7 @@ const welcomeDialog = (function (bodyElement) {
 
   // Enable the button upon clicking on either radio option
   welcomeRoot.addEventListener('click', (event) => {
-    if (event.target.matches(`.${optionClass}`)) {
+    if (event.target.matches(`.${radioClass}`)) {
       button.disabled = false;
       startingOption = event.target.value;
     }
@@ -184,7 +186,7 @@ const boardView = function (cellViews, bodyElement) {
   function _initRestartButton(className) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = 'Start new game!';
+    button.textContent = 'Start new game';
     button.classList.add(className);
     return button;
   }
@@ -263,20 +265,35 @@ const boardModel = function (cellModels) {
   };
 };
 
+/** Player prototype object. */
+const playerProto = {
+  /** Returns player mark. */
+  getMark: function () {
+    return this.mark;
+  },
+
+  /** Increments player score upon winning a round. */
+  increaseScore: function () {
+    return this.score++;
+  },
+
+  getScore: function () {
+    return this.score;
+  },
+};
 /** Models the player. */
-const playerModel = function (name, mark) {
-  const getMark = function () {
-    return mark;
-  };
-
-  const getName = function () {
-    return name;
-  };
-
-  return { getMark, getName };
+const playerModel = function (mark, playerProto) {
+  let playerData = { score: 0, mark: mark };
+  let model = Object.assign(playerData, playerProto);
+  return model;
 };
 
-const playerController = (function (playerModel) {
+const playerView = function (mark) {
+  const root = document.createElement('div');
+  root.classList.add('player');
+};
+
+const playerController = (function (playerModel, playerView, playerPrototype) {
   const markMapping = { Nought: '0', Cross: 'X' };
 
   let firstPlayer;
@@ -285,11 +302,13 @@ const playerController = (function (playerModel) {
   let nowPlaying;
 
   const setupPlayers = function (firstPlayerMark) {
-    firstPlayer = playerModel('First Player', markMapping[firstPlayerMark]);
+    firstPlayer = playerModel(markMapping[firstPlayerMark], playerPrototype);
     nowPlaying = firstPlayer;
 
+    console.table(firstPlayer);
+
     const remainingMark = firstPlayerMark === 'Cross' ? 'Nought' : 'Cross';
-    secondPlayer = playerModel('Second Player', markMapping[remainingMark]);
+    secondPlayer = playerModel(markMapping[remainingMark], playerPrototype);
   };
 
   /** Switches the player to make the next move. */
@@ -307,7 +326,7 @@ const playerController = (function (playerModel) {
   };
 
   return { setupPlayers, getNextMark };
-})(playerModel);
+})(playerModel, playerView, playerProto);
 
 const gameController = (function (
   boardView,
@@ -348,6 +367,7 @@ const gameController = (function (
     const playerWon = hasPlayerWon();
     if (playerWon === false) {
       const nextMark = playerController.getNextMark();
+      console.log(`Next mark: ${nextMark}`);
       if (event === 'move') {
         // When a move has been completed by a player,
         // assign the next player to make a move.
@@ -363,6 +383,7 @@ const gameController = (function (
     return _model.ifPlayerWon();
   };
 
+  /** Reinitialize the gameboard whenever the restart button is pressed by the player. */
   function _restartHandler() {
     hide();
     _view = null;
@@ -380,6 +401,7 @@ const gameController = (function (
     _view.show();
   };
 
+  /** Hides the game board. */
   const hide = function () {
     _view.hide();
   };
