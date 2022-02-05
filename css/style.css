@@ -22,9 +22,9 @@ html {
 }
 
 body {
-  background-image: url(/background_image.jpg);
   height: 100%;
   width: 100%;
+  background-image: url("/background_image.jpg");
 }
 
 .header {
@@ -189,4 +189,8 @@ body {
   padding: 0.3em 0.2em;
   border: 3px inset var(--pink);
   cursor: pointer;
+}
+
+.app__obscured {
+  filter: brightness(75%) blur(3px);
 }

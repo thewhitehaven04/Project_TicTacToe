@@ -1,4 +1,4 @@
-const body = document.querySelector('body');
+const app = document.querySelector('.app');
 const cellModel = function () {
   let value = null;
 
@@ -72,7 +72,7 @@ const cellController = function (notifier) {
   return obj;
 };
 
-const welcomeDialog = (function (bodyElement) {
+const welcomeDialog = (function (appElement) {
   // All objects of the welcome window are stored here to provide access to
   const welcomeRoot = (function (className) {
     const root = document.createElement('div');
@@ -139,25 +139,25 @@ const welcomeDialog = (function (bodyElement) {
 
   welcomeRoot.appendChild(options);
   welcomeRoot.appendChild(button);
-  bodyElement.append(welcomeRoot);
+  appElement.append(welcomeRoot);
 
   /** Close the welcome dialog form */
-  const hide = () => bodyElement.removeChild(welcomeRoot);
+  const hide = () => appElement.removeChild(welcomeRoot);
 
   /** Show the welcome dialog form */
-  const show = () => bodyElement.appendChild(welcomeRoot);
+  const show = () => appElement.appendChild(welcomeRoot);
 
   const getStartingOption = () => {
     return startingOption;
   };
 
   return { hide, show, buttonClickEventListener, getStartingOption };
-})(body);
+})(app);
 
 /** Renders the game board.
  * @param {cellView} cellViews - an array of cellView objects to be rendered
  */
-const boardView = function (cellViews, bodyElement) {
+const boardView = function (cellViews, appElement) {
   const rootDiv = document.createElement('div');
   let boardTwoDimArray = [];
 
@@ -182,7 +182,8 @@ const boardView = function (cellViews, bodyElement) {
     return boardRoot;
   }
 
-  // Initialize the restart button.
+  /** Initialize the new game button.
+   * @param {String} className - name of the CSS class to apply to the button. */
   function _initRestartButton(className) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -191,6 +192,8 @@ const boardView = function (cellViews, bodyElement) {
     return button;
   }
 
+  /** binds the restart handler to the new game button.
+   * @param {Function} restartHandler - the name of the function to call to execute restart logic. */ 
   const addRestartHandler = (restartHandler) => {
     buttonRestart.addEventListener('click', (event) => restartHandler());
   };
@@ -199,11 +202,11 @@ const boardView = function (cellViews, bodyElement) {
   const show = function () {
     rootDiv.appendChild(board);
     rootDiv.appendChild(buttonRestart);
-    bodyElement.appendChild(rootDiv);
+    appElement.appendChild(rootDiv);
   };
 
   const hide = function () {
-    bodyElement.removeChild(rootDiv);
+    appElement.removeChild(rootDiv);
   };
 
   /** Replaces the current cell view with the one supplied in the cellView argument.
@@ -336,6 +339,7 @@ const playerController = (function (playerModel, playerView, playerPrototype) {
     }
   };
 
+  /** Returns the mark to be placed in the next move. */
   const getNextMark = function () {
     _nextMove();
     return nowPlaying.getMark();
@@ -435,15 +439,19 @@ const gameController = (function (
   playerController,
   notificationControllerFactory,
   resultMessage,
-  body,
+  app,
 );
 
 /** View of the result screen.
  * @param {String} outcome - the outcome string
  */
-function resultMessage(outcome, players, body) {
+function resultMessage(outcome, players, app) {
   const messageContainerDiv = document.createElement('div');
   messageContainerDiv.classList.add('result');
+
+  // The name of the class that is applied to
+  // reduce brightness of elements behind the result div.
+  const obscuredClass = 'app__obscured';
 
   const spanMsg = document.createElement('span');
   spanMsg.textContent = _initResultMsg(outcome, players);
@@ -453,11 +461,9 @@ function resultMessage(outcome, players, body) {
   messageContainerDiv.appendChild(spanMsg);
   messageContainerDiv.appendChild(acceptButton);
 
-  // Helper function that returns a message describing the outcome.
+  /** Helper function that returns a message describing the outcome. */
   function _initResultMsg(outcome, players) {
     const playerMarks = players.map((player) => player.getMark());
-
-    console.table(playerMarks);
 
     if (outcome in playerMarks) {
       return `The player "${playerMarks[outcome]} (${outcome})" has won!`;
@@ -466,6 +472,7 @@ function resultMessage(outcome, players, body) {
     }
   }
 
+  /** Helper function that initializes the Accept button. */
   function _initAcceptButton() {
     const button = document.createElement('button');
     button.textContent = 'Accept';
@@ -480,10 +487,16 @@ function resultMessage(outcome, players, body) {
   }
 
   /** Shows the message. */
-  const show = () => body.appendChild(messageContainerDiv);
+  const show = () => {
+    document.querySelector('body').appendChild(messageContainerDiv);
+    app.classList.add(obscuredClass);
+  };
 
   /** Hides the message. */
-  const _hide = () => body.removeChild(messageContainerDiv);
+  const _hide = () => {
+    document.querySelector('body').removeChild(messageContainerDiv);
+    app.classList.remove(obscuredClass);
+  };
 
   return { show };
 }
