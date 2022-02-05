@@ -1,5 +1,3 @@
-@import url(https://fonts.googleapis.com/css?family=Bangers);
-
 html {
   box-sizing: border-box;
 }
@@ -12,7 +10,6 @@ html {
 
 :root {
   font-family: 'Bangers';
-  font-size: 42pt;
   --picotee-blue: #2b1e88;
   --cornflower-blue: #8390fa;
   --maize-crayola: #fac748;
@@ -24,17 +21,17 @@ html {
 body {
   height: 100%;
   width: 100%;
-  background-image: url("/background_image.jpg");
+  background-image: url('/background_image.jpg');
 }
 
 .header {
   color: var(--pink);
   font-size: 60pt;
-  text-shadow: 2px 2px 2px black;
+  text-shadow: inherit;
 }
 
-
-.welcome, .result {
+.welcome,
+.result {
   border: 8px inset var(--pink);
   border-radius: 18px;
   display: flex;
@@ -45,17 +42,12 @@ body {
   margin: 80px auto;
   width: 500px;
   max-width: 60%;
-  padding: 15px;
+  padding: auto;
 
   background-color: var(--maize-crayola);
   color: var(--picotee-blue);
 
-  border: 8px inset var(--pink);
-  padding: auto;
-}
-
-.welcome__button:disabled {
-  opacity: 0.7;
+  font-size: 42pt;
 }
 
 .welcome__button {
@@ -71,8 +63,12 @@ body {
   transition: transform 0.1s cubic-bezier(0.075, 0.82, 0.165, 1);
 }
 
+.welcome__button:disabled {
+  opacity: 0.7;
+}
 
-.welcome__button, .button-restart:hover {
+.welcome__button,
+.button-restart:hover {
   transform: scale(1.06);
   cursor: pointer;
 }
@@ -142,16 +138,18 @@ body {
 
 .button-restart {
   all: inherit;
-  padding: 15px;
   margin: 15px auto;
+  padding: 15px;
+
+  font-size: 32pt;
+
   background-color: var(--maize-crayola);
   color: var(--picotee-blue);
   border: 8px inset var(--pink);
+
   cursor: pointer;
   transition: transform 0.1s cubic-bezier(0.075, 0.82, 0.165, 1);
 }
-
-
 
 .result {
   position: fixed;
@@ -159,11 +157,9 @@ body {
 
   top: 50%;
   left: 50%;
-
   transform: translate(-50%, -50%);
 
   width: 500px;
-  
   padding: 20px;
 
   background-color: var(--cornflower-blue);
@@ -172,14 +168,13 @@ body {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  
-  font-size: 32pt;
-}
 
+  font-size: 42pt;
+}
 
 .result__accept {
   font-family: inherit;
-  color: var(--picotee-blue); 
+  color: var(--picotee-blue);
   text-shadow: inherit;
 
   background-color: var(--maize-crayola);

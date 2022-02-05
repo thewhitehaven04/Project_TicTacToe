@@ -193,7 +193,7 @@ const boardView = function (cellViews, appElement) {
   }
 
   /** binds the restart handler to the new game button.
-   * @param {Function} restartHandler - the name of the function to call to execute restart logic. */ 
+   * @param {Function} restartHandler - the name of the function to call to execute restart logic. */
   const addRestartHandler = (restartHandler) => {
     buttonRestart.addEventListener('click', (event) => restartHandler());
   };
@@ -299,12 +299,7 @@ const playerModel = function (mark, name, playerProto) {
   return model;
 };
 
-const playerView = function (mark) {
-  const root = document.createElement('div');
-  root.classList.add('player');
-};
-
-const playerController = (function (playerModel, playerView, playerPrototype) {
+const playerController = (function (playerModel, playerPrototype) {
   const markMapping = { Nought: '0', Cross: 'X' };
 
   let firstPlayer;
@@ -350,7 +345,7 @@ const playerController = (function (playerModel, playerView, playerPrototype) {
   };
 
   return { setupPlayers, getNextMark, getPlayers };
-})(playerModel, playerView, playerProto);
+})(playerModel, playerProto);
 
 const gameController = (function (
   boardView,
@@ -463,10 +458,10 @@ function resultMessage(outcome, players, app) {
 
   /** Helper function that returns a message describing the outcome. */
   function _initResultMsg(outcome, players) {
-    const playerMarks = players.map((player) => player.getMark());
+    const player = players.find((player) => player.getMark() == outcome);
 
-    if (outcome in playerMarks) {
-      return `The player "${playerMarks[outcome]} (${outcome})" has won!`;
+    if (player) {
+      return `The player "${player.getName()} (${player.getMarkMark()})" has won!`;
     } else {
       return `It's a tie!`;
     }
