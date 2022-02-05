@@ -104,7 +104,7 @@ const welcomeDialog = (function (appElement) {
       optionInput.classList.add(radioClass);
 
       // Set attributes for options
-      for (property in option)
+      for (let property in option)
         optionInput.setAttribute(property, option[property]);
 
       optionLabel.appendChild(optionInput);
@@ -257,7 +257,7 @@ const boardModel = function (cellModels) {
       [board[2][0], board[2][1], board[2][2]],
     ].map((condition) => condition.map((value) => value.getCell()));
 
-    for (condition of winConditions) {
+    for (let condition of winConditions) {
       if (condition.join('') === 'xxx') return 'X';
       else if (condition.join('') === '000') return '0';
     }
@@ -390,7 +390,7 @@ const gameController = (function (
       if (event === 'move') {
         // When a move has been completed by a player,
         // assign the next player to make a move.
-        for (cell of _cells) cell.updateNextValue(nextMark);
+        for (let cell of _cells) cell.updateNextValue(nextMark);
       }
     } else {
       const players = playerController.getPlayers();
@@ -461,7 +461,7 @@ function resultMessage(outcome, players, app) {
     const player = players.find((player) => player.getMark() == outcome);
 
     if (player) {
-      return `The player "${player.getName()} (${player.getMarkMark()})" has won!`;
+      return `The player "${player.getName()} (${player.getMark()})" has won!`;
     } else {
       return `It's a tie!`;
     }
