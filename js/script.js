@@ -256,9 +256,7 @@ const boardModel = function (cellModels) {
       [board[1][0], board[1][1], board[1][2]],
       [board[2][0], board[2][1], board[2][2]],
     ].map((condition) => condition.map((value) => value.getCell()));
-
-    console.table(winConditions);
-
+    
     for (let condition of winConditions) {
       if (condition.join('') === 'XXX') return 'X';
       else if (condition.join('') === '000') return '0';
@@ -338,8 +336,9 @@ const playerController = (function (playerModel, playerPrototype) {
 
   /** Returns the mark to be placed in the next move. */
   const getNextMark = function () {
+    const currentMark = nowPlaying.getMark();
     _nextMove();
-    return nowPlaying.getMark();
+    return currentMark; 
   };
 
   const getPlayers = function () {
